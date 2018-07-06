@@ -48,4 +48,10 @@
         app:srcCompat="@drawable/ic_camera"
         app:useCompatPadding="true"/>
 
+    <ImageView
+        android:id="@+id/img_preview"
+        android:layout_margin="10dp"
+        android:layout_width="100dp"
+        android:layout_height="100dp"/>
+
 </RelativeLayout>
