@@ -34,7 +34,6 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.SparseIntArray;
 import android.view.Surface;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Set;
@@ -263,11 +262,20 @@ class Camera2 extends CameraViewImpl {
 
     @Override
     boolean setAspectRatio(AspectRatio ratio) {
-        if (ratio == null || ratio.equals(mAspectRatio) ||
-                !mPreviewSizes.ratios().contains(ratio)) {
+        if (ratio == null || ratio.equals(mAspectRatio)) {
             // TODO: Better error handling
             return false;
         }
+
+        if (!mPreviewSizes.ratios().contains(ratio)) {
+            if (mPreviewSizes.ratios().size() <= 0) {
+                // may be initialized from layout xml
+                mAspectRatio = ratio;
+                return true;
+            }
+            return false;
+        }
+
         mAspectRatio = ratio;
         prepareImageReader();
         if (mCaptureSession != null) {
@@ -640,8 +648,8 @@ class Camera2 extends CameraViewImpl {
                     new CameraCaptureSession.CaptureCallback() {
                         @Override
                         public void onCaptureCompleted(@NonNull CameraCaptureSession session,
-                                @NonNull CaptureRequest request,
-                                @NonNull TotalCaptureResult result) {
+                                                       @NonNull CaptureRequest request,
+                                                       @NonNull TotalCaptureResult result) {
                             unlockFocus();
                         }
                     }, null);
@@ -695,13 +703,13 @@ class Camera2 extends CameraViewImpl {
 
         @Override
         public void onCaptureProgressed(@NonNull CameraCaptureSession session,
-                @NonNull CaptureRequest request, @NonNull CaptureResult partialResult) {
+                                        @NonNull CaptureRequest request, @NonNull CaptureResult partialResult) {
             process(partialResult);
         }
 
         @Override
         public void onCaptureCompleted(@NonNull CameraCaptureSession session,
-                @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
+                                       @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
             process(result);
         }
 
