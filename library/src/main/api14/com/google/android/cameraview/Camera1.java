@@ -22,7 +22,6 @@ import android.hardware.Camera;
 import android.os.Build;
 import android.support.v4.util.SparseArrayCompat;
 import android.view.SurfaceHolder;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
@@ -331,12 +330,19 @@ class Camera1 extends CameraViewImpl {
         }
         Size size = chooseOptimalSize(sizes);
 
-        // Always re-apply camera parameters
-        // Largest picture size in this ratio
-        final Size pictureSize = mPictureSizes.sizes(mAspectRatio).last();
+        final Size pictureSize;
+        if (mPictureSizes.sizes(mAspectRatio) == null) {
+            pictureSize = size;
+        } else {
+            // Largest picture size in this ratio
+            pictureSize = mPictureSizes.sizes(mAspectRatio).last();
+        }
+
         if (mShowingPreview) {
             mCamera.stopPreview();
         }
+
+        // Always re-apply camera parameters
         mCameraParameters.setPreviewSize(size.getWidth(), size.getHeight());
         mCameraParameters.setPictureSize(pictureSize.getWidth(), pictureSize.getHeight());
         mCameraParameters.setRotation(calcCameraRotation(mDisplayOrientation));
