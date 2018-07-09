@@ -89,7 +89,7 @@ public class CameraView extends FrameLayout {
     @SuppressWarnings("WrongConstant")
     public CameraView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        if (isInEditMode()){
+        if (isInEditMode()) {
             mCallbacks = null;
             mDisplayOrientationDetector = null;
             return;
@@ -156,7 +156,7 @@ public class CameraView extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (isInEditMode()){
+        if (isInEditMode()) {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             return;
         }
@@ -245,7 +245,7 @@ public class CameraView extends FrameLayout {
     public void start() {
         if (!mImpl.start()) {
             //store the state ,and restore this state after fall back o Camera1
-            Parcelable state=onSaveInstanceState();
+            Parcelable state = onSaveInstanceState();
             // Camera2 uses legacy hardware layer; fall back to Camera1
             mImpl = new Camera1(mCallbacks, createPreviewImpl(getContext()));
             onRestoreInstanceState(state);
@@ -290,7 +290,7 @@ public class CameraView extends FrameLayout {
 
     /**
      * @param adjustViewBounds {@code true} if you want the CameraView to adjust its bounds to
-     *                         preserve the aspect ratio of camera.
+     * preserve the aspect ratio of camera.
      * @see #getAdjustViewBounds()
      */
     public void setAdjustViewBounds(boolean adjustViewBounds) {
@@ -313,7 +313,7 @@ public class CameraView extends FrameLayout {
      * Chooses camera by the direction it faces.
      *
      * @param facing The camera facing. Must be either {@link #FACING_BACK} or
-     *               {@link #FACING_FRONT}.
+     * {@link #FACING_FRONT}.
      */
     public void setFacing(@Facing int facing) {
         mImpl.setFacing(facing);
@@ -363,7 +363,7 @@ public class CameraView extends FrameLayout {
      * auto-focus, calling this method will be ignored.
      *
      * @param autoFocus {@code true} to enable continuous auto-focus mode. {@code false} to
-     *                  disable it.
+     * disable it.
      */
     public void setAutoFocus(boolean autoFocus) {
         mImpl.setAutoFocus(autoFocus);
@@ -439,6 +439,13 @@ public class CameraView extends FrameLayout {
         public void onCameraClosed() {
             for (Callback callback : mCallbacks) {
                 callback.onCameraClosed(CameraView.this);
+            }
+        }
+
+        @Override
+        public void onCameraConfigured() {
+            for (Callback callback : mCallbacks) {
+                callback.onCameraConfigured(CameraView.this);
             }
         }
 
@@ -528,10 +535,19 @@ public class CameraView extends FrameLayout {
         }
 
         /**
+         * Called when camera is configured ready to take pictures.
+         *
+         * @param cameraView The associated {@link CameraView}.
+         */
+        public void onCameraConfigured(CameraView cameraView) {
+
+        }
+
+        /**
          * Called when a picture is taken.
          *
          * @param cameraView The associated {@link CameraView}.
-         * @param data       JPEG data.
+         * @param data JPEG data.
          */
         public void onPictureTaken(CameraView cameraView, byte[] data) {
         }
