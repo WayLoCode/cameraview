@@ -79,6 +79,7 @@ abstract class CameraViewImpl {
 
         void onPictureTaken(byte[] data);
 
+        void onTakePictureFailed(Throwable throwable);
     }
 
 }

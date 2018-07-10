@@ -30,7 +30,6 @@ import android.support.v4.os.ParcelableCompatCreatorCallbacks;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.widget.FrameLayout;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
@@ -404,7 +403,11 @@ public class CameraView extends FrameLayout {
      * {@link Callback#onPictureTaken(CameraView, byte[])}.
      */
     public void takePicture() {
-        mImpl.takePicture();
+        try {
+            mImpl.takePicture();
+        } catch (RuntimeException e) {
+            mCallbacks.onTakePictureFailed(e);
+        }
     }
 
     private class CallbackBridge implements CameraViewImpl.Callback {
@@ -453,6 +456,13 @@ public class CameraView extends FrameLayout {
         public void onPictureTaken(byte[] data) {
             for (Callback callback : mCallbacks) {
                 callback.onPictureTaken(CameraView.this, data);
+            }
+        }
+
+        @Override
+        public void onTakePictureFailed(Throwable throwable) {
+            for (Callback callback : mCallbacks) {
+                callback.onTakePictureFailed(CameraView.this, throwable);
             }
         }
 
@@ -550,6 +560,15 @@ public class CameraView extends FrameLayout {
          * @param data JPEG data.
          */
         public void onPictureTaken(CameraView cameraView, byte[] data) {
+        }
+
+        /**
+         * Called when taking a picture has failed
+         *
+         * @param cameraView The associated {@link CameraView}.
+         * @param throwable Exception
+         */
+        public void onTakePictureFailed(CameraView cameraView, Throwable throwable) {
         }
     }
 
