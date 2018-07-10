@@ -98,7 +98,7 @@ class Camera2 extends CameraViewImpl {
 
         @Override
         public void onConfigured(@NonNull CameraCaptureSession session) {
-            if (mCamera == null) {
+            if (!isCameraOpened()) {
                 return;
             }
             mCaptureSession = session;
@@ -226,11 +226,9 @@ class Camera2 extends CameraViewImpl {
 
     @Override
     void stop() {
-        if (mCaptureSession != null) {
-            mCaptureSession.close();
-            mCaptureSession = null;
-        }
-        if (mCamera != null) {
+        closeCaptureSession();
+
+        if (isCameraOpened()) {
             mCamera.close();
             mCamera = null;
         }
@@ -285,12 +283,15 @@ class Camera2 extends CameraViewImpl {
 
         mAspectRatio = ratio;
         prepareImageReader();
+        closeCaptureSession();
+        return true;
+    }
+
+    private void closeCaptureSession() {
         if (mCaptureSession != null) {
             mCaptureSession.close();
             mCaptureSession = null;
-            startCaptureSession();
         }
-        return true;
     }
 
     @Override
