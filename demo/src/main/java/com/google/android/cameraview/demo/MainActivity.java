@@ -97,6 +97,8 @@ public class MainActivity extends AppCompatActivity implements
 
     private FloatingActionButton mFab;
 
+    private boolean mIsOpen;
+
     private View.OnClickListener mOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -104,6 +106,15 @@ public class MainActivity extends AppCompatActivity implements
                 case R.id.take_picture:
                     if (mCameraView != null) {
                         mCameraView.takePicture();
+                    }
+                    break;
+                case R.id.ib_open_close:
+                    if (mCameraView != null) {
+                        if (mIsOpen) {
+                            mCameraView.stop();
+                        } else {
+                            mCameraView.start();
+                        }
                     }
                     break;
             }
@@ -129,6 +140,7 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         mImgPic = (ImageView) findViewById(R.id.img_preview);
+        findViewById(R.id.ib_open_close).setOnClickListener(mOnClickListener);
     }
 
     @Override
@@ -256,6 +268,7 @@ public class MainActivity extends AppCompatActivity implements
         @Override
         public void onCameraOpened(CameraView cameraView) {
             Log.d(TAG, "onCameraOpened");
+            mIsOpen = true;
         }
 
         @Override
@@ -264,6 +277,7 @@ public class MainActivity extends AppCompatActivity implements
             if (mFab != null) {
                 mFab.setOnClickListener(null);
             }
+            mIsOpen = false;
         }
 
         @Override
