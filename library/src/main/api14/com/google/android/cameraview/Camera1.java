@@ -45,7 +45,7 @@ class Camera1 extends CameraViewImpl {
         FLASH_MODES.put(Constants.FLASH_RED_EYE, Camera.Parameters.FLASH_MODE_RED_EYE);
     }
 
-    private int mCameraId;
+    private int mCameraId = INVALID_CAMERA_ID;
 
     private final AtomicBoolean isPictureCaptureInProgress = new AtomicBoolean(false);
 
@@ -87,7 +87,12 @@ class Camera1 extends CameraViewImpl {
     @Override
     boolean start() {
         chooseCamera();
-        openCamera();
+
+        if (!openCamera()) {
+            mCallback.onCameraNotAvailable();
+            return false;
+        }
+
         if (mPreview.isReady()) {
             setUpPreview();
         }
@@ -288,10 +293,15 @@ class Camera1 extends CameraViewImpl {
         mCameraId = INVALID_CAMERA_ID;
     }
 
-    private void openCamera() {
+    private boolean openCamera() {
         if (mCamera != null) {
             releaseCamera();
         }
+
+        if (mCameraId == INVALID_CAMERA_ID) {
+            return false;
+        }
+
         mCamera = Camera.open(mCameraId);
         mCameraParameters = mCamera.getParameters();
         // Supported preview sizes
@@ -312,6 +322,8 @@ class Camera1 extends CameraViewImpl {
         mCamera.setDisplayOrientation(calcDisplayOrientation(mDisplayOrientation));
         mCallback.onCameraOpened();
         mCallback.onCameraConfigured();
+
+        return true;
     }
 
     private AspectRatio chooseAspectRatio() {
