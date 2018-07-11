@@ -129,6 +129,7 @@ public class MainActivity extends AppCompatActivity implements
         if (mCameraView != null) {
             mCameraView.addCallback(mCallback);
         }
+        mCameraView.setManualFocus(true);
 
         mFab = (FloatingActionButton) findViewById(R.id.take_picture);
 

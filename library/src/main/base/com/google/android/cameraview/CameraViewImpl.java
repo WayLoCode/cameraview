@@ -17,7 +17,6 @@
 package com.google.android.cameraview;
 
 import android.view.View;
-
 import java.util.Set;
 
 abstract class CameraViewImpl {
@@ -44,9 +43,9 @@ abstract class CameraViewImpl {
 
     abstract boolean isCameraOpened();
 
-    abstract void setFacing(int facing);
-
     abstract int getFacing();
+
+    abstract void setFacing(int facing);
 
     abstract Set<AspectRatio> getSupportedAspectRatios();
 
@@ -57,17 +56,21 @@ abstract class CameraViewImpl {
 
     abstract AspectRatio getAspectRatio();
 
-    abstract void setAutoFocus(boolean autoFocus);
-
     abstract boolean getAutoFocus();
 
-    abstract void setFlash(int flash);
+    abstract void setAutoFocus(boolean autoFocus);
 
     abstract int getFlash();
+
+    abstract void setFlash(int flash);
 
     abstract void takePicture();
 
     abstract void setDisplayOrientation(int displayOrientation);
+
+    abstract boolean hasManualFocus();
+
+    abstract void setFocusAt(int x, int y);
 
     interface Callback {
 
@@ -78,6 +81,8 @@ abstract class CameraViewImpl {
         void onCameraNotAvailable();
 
         void onCameraConfigured();
+
+        void onFocusAt(int x, int y);
 
         void onPictureTaken(byte[] data);
 

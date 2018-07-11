@@ -29,6 +29,9 @@ import android.support.v4.os.ParcelableCompat;
 import android.support.v4.os.ParcelableCompatCreatorCallbacks;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.FrameLayout;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -42,40 +45,22 @@ public class CameraView extends FrameLayout {
 
     /** The camera device faces the same direction as the device's screen. */
     public static final int FACING_FRONT = Constants.FACING_FRONT;
-
-    /** Direction the camera faces relative to device screen. */
-    @IntDef({FACING_BACK, FACING_FRONT})
-    @Retention(RetentionPolicy.SOURCE)
-    public @interface Facing {
-    }
-
     /** Flash will not be fired. */
     public static final int FLASH_OFF = Constants.FLASH_OFF;
-
     /** Flash will always be fired during snapshot. */
     public static final int FLASH_ON = Constants.FLASH_ON;
-
     /** Constant emission of light during preview, auto-focus and snapshot. */
     public static final int FLASH_TORCH = Constants.FLASH_TORCH;
-
     /** Flash will be fired automatically when required. */
     public static final int FLASH_AUTO = Constants.FLASH_AUTO;
-
     /** Flash will be fired in red-eye reduction mode. */
     public static final int FLASH_RED_EYE = Constants.FLASH_RED_EYE;
-
-    /** The mode for for the camera device's flash control */
-    @IntDef({FLASH_OFF, FLASH_ON, FLASH_TORCH, FLASH_AUTO, FLASH_RED_EYE})
-    public @interface Flash {
-    }
-
+    private final CallbackBridge mCallbacks;
+    private final DisplayOrientationDetector mDisplayOrientationDetector;
     CameraViewImpl mImpl;
 
-    private final CallbackBridge mCallbacks;
-
+    PreviewOverlay mOverlay;
     private boolean mAdjustViewBounds;
-
-    private final DisplayOrientationDetector mDisplayOrientationDetector;
 
     public CameraView(Context context) {
         this(context, null);
@@ -103,6 +88,9 @@ public class CameraView extends FrameLayout {
         } else {
             mImpl = new Camera2Api23(mCallbacks, preview, context);
         }
+
+        mOverlay = createPreviewOverlay(context);
+
         // Attributes
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.CameraView, defStyleAttr,
                 R.style.Widget_CameraView);
@@ -124,6 +112,11 @@ public class CameraView extends FrameLayout {
                 mImpl.setDisplayOrientation(displayOrientation);
             }
         };
+    }
+
+    private PreviewOverlay createPreviewOverlay(Context context) {
+        final View view = View.inflate(context, R.layout.preview_overlay, this);
+        return (PreviewOverlay) view.findViewById(R.id.preview_overlay);
     }
 
     @NonNull
@@ -292,18 +285,6 @@ public class CameraView extends FrameLayout {
     }
 
     /**
-     * @param adjustViewBounds {@code true} if you want the CameraView to adjust its bounds to
-     * preserve the aspect ratio of camera.
-     * @see #getAdjustViewBounds()
-     */
-    public void setAdjustViewBounds(boolean adjustViewBounds) {
-        if (mAdjustViewBounds != adjustViewBounds) {
-            mAdjustViewBounds = adjustViewBounds;
-            requestLayout();
-        }
-    }
-
-    /**
      * @return True when this CameraView is adjusting its bounds to preserve the aspect ratio of
      * camera.
      * @see #setAdjustViewBounds(boolean)
@@ -313,13 +294,15 @@ public class CameraView extends FrameLayout {
     }
 
     /**
-     * Chooses camera by the direction it faces.
-     *
-     * @param facing The camera facing. Must be either {@link #FACING_BACK} or
-     * {@link #FACING_FRONT}.
+     * @param adjustViewBounds {@code true} if you want the CameraView to adjust its bounds to
+     * preserve the aspect ratio of camera.
+     * @see #getAdjustViewBounds()
      */
-    public void setFacing(@Facing int facing) {
-        mImpl.setFacing(facing);
+    public void setAdjustViewBounds(boolean adjustViewBounds) {
+        if (mAdjustViewBounds != adjustViewBounds) {
+            mAdjustViewBounds = adjustViewBounds;
+            requestLayout();
+        }
     }
 
     /**
@@ -334,10 +317,30 @@ public class CameraView extends FrameLayout {
     }
 
     /**
+     * Chooses camera by the direction it faces.
+     *
+     * @param facing The camera facing. Must be either {@link #FACING_BACK} or
+     * {@link #FACING_FRONT}.
+     */
+    public void setFacing(@Facing int facing) {
+        mImpl.setFacing(facing);
+    }
+
+    /**
      * Gets all the aspect ratios supported by the current camera.
      */
     public Set<AspectRatio> getSupportedAspectRatios() {
         return mImpl.getSupportedAspectRatios();
+    }
+
+    /**
+     * Gets the current aspect ratio of camera.
+     *
+     * @return The current {@link AspectRatio}. Can be {@code null} if no camera is opened yet.
+     */
+    @Nullable
+    public AspectRatio getAspectRatio() {
+        return mImpl.getAspectRatio();
     }
 
     /**
@@ -352,13 +355,13 @@ public class CameraView extends FrameLayout {
     }
 
     /**
-     * Gets the current aspect ratio of camera.
+     * Returns whether the continuous auto-focus mode is enabled.
      *
-     * @return The current {@link AspectRatio}. Can be {@code null} if no camera is opened yet.
+     * @return {@code true} if the continuous auto-focus mode is enabled. {@code false} if it is
+     * disabled, or if it is not supported by the current camera.
      */
-    @Nullable
-    public AspectRatio getAspectRatio() {
-        return mImpl.getAspectRatio();
+    public boolean getAutoFocus() {
+        return mImpl.getAutoFocus();
     }
 
     /**
@@ -373,22 +376,29 @@ public class CameraView extends FrameLayout {
     }
 
     /**
-     * Returns whether the continuous auto-focus mode is enabled.
+     * Enables or disables the manual focus mode. When the current camera doesn't support
+     * manual focus, calling this method will have no effect.
      *
-     * @return {@code true} if the continuous auto-focus mode is enabled. {@code false} if it is
-     * disabled, or if it is not supported by the current camera.
+     * @param manualFocus {@code true} to enable manual focus mode. {@code false} to
+     * disable it.
      */
-    public boolean getAutoFocus() {
-        return mImpl.getAutoFocus();
-    }
-
-    /**
-     * Sets the flash mode.
-     *
-     * @param flash The desired flash mode.
-     */
-    public void setFlash(@Flash int flash) {
-        mImpl.setFlash(flash);
+    public void setManualFocus(final boolean manualFocus) {
+        if (manualFocus) {
+            if (!mOverlay.hasGestureDetector()) {
+                mOverlay.setGestureListener(new GestureDetector.SimpleOnGestureListener() {
+                    @Override
+                    public boolean onSingleTapUp(MotionEvent e) {
+                        if (!mImpl.hasManualFocus()) {
+                            return false;
+                        }
+                        mImpl.setFocusAt((int) e.getX(), (int) e.getY());
+                        return true;
+                    }
+                });
+            }
+        } else {
+            mOverlay.setGestureListener(null);
+        }
     }
 
     /**
@@ -403,6 +413,15 @@ public class CameraView extends FrameLayout {
     }
 
     /**
+     * Sets the flash mode.
+     *
+     * @param flash The desired flash mode.
+     */
+    public void setFlash(@Flash int flash) {
+        mImpl.setFlash(flash);
+    }
+
+    /**
      * Take a picture. The result will be returned to
      * {@link Callback#onPictureTaken(CameraView, byte[])}.
      */
@@ -411,6 +430,160 @@ public class CameraView extends FrameLayout {
             mImpl.takePicture();
         } catch (RuntimeException e) {
             mCallbacks.onTakePictureFailed(e);
+        }
+    }
+
+    /** Direction the camera faces relative to device screen. */
+    @IntDef({FACING_BACK, FACING_FRONT})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface Facing {
+    }
+
+    /** The mode for for the camera device's flash control */
+    @IntDef({FLASH_OFF, FLASH_ON, FLASH_TORCH, FLASH_AUTO, FLASH_RED_EYE})
+    public @interface Flash {
+    }
+
+    protected static class SavedState extends BaseSavedState {
+
+        public static final Parcelable.Creator<SavedState> CREATOR
+                = ParcelableCompat.newCreator(new ParcelableCompatCreatorCallbacks<SavedState>() {
+
+            @Override
+            public SavedState createFromParcel(Parcel in, ClassLoader loader) {
+                return new SavedState(in, loader);
+            }
+
+            @Override
+            public SavedState[] newArray(int size) {
+                return new SavedState[size];
+            }
+
+        });
+        @Facing
+        int facing;
+        AspectRatio ratio;
+        boolean autoFocus;
+        @Flash
+        int flash;
+
+        @SuppressWarnings("WrongConstant")
+        public SavedState(Parcel source, ClassLoader loader) {
+            super(source);
+            facing = source.readInt();
+            ratio = source.readParcelable(loader);
+            autoFocus = source.readByte() != 0;
+            flash = source.readInt();
+        }
+
+        public SavedState(Parcelable superState) {
+            super(superState);
+        }
+
+        @Override
+        public void writeToParcel(Parcel out, int flags) {
+            super.writeToParcel(out, flags);
+            out.writeInt(facing);
+            out.writeParcelable(ratio, 0);
+            out.writeByte((byte) (autoFocus ? 1 : 0));
+            out.writeInt(flash);
+        }
+
+    }
+
+    /**
+     * Callback for monitoring events about {@link CameraView}.
+     */
+    @SuppressWarnings("UnusedParameters")
+    public abstract static class Callback {
+
+        /**
+         * Called when camera is opened.
+         *
+         * @param cameraView The associated {@link CameraView}.
+         */
+        public void onCameraOpened(CameraView cameraView) {
+        }
+
+        /**
+         * Called when camera is closed.
+         *
+         * @param cameraView The associated {@link CameraView}.
+         */
+        public void onCameraClosed(CameraView cameraView) {
+        }
+
+        /**
+         * Called when camera is configured ready to take pictures.
+         *
+         * @param cameraView The associated {@link CameraView}.
+         */
+        public void onCameraConfigured(CameraView cameraView) {
+
+        }
+
+        /**
+         * Called when there is no camera to open
+         *
+         * @param cameraView The associated {@link CameraView}.
+         */
+        public void onCameraNotAvailable(CameraView cameraView) {
+        }
+
+        /**
+         * Called when focus happens.
+         *
+         * @param x View's x coordinate.
+         * @param y View's y coordinate.
+         */
+        public void onFocusAt(int x, int y) {
+        }
+
+        /**
+         * Called when a picture is taken.
+         *
+         * @param cameraView The associated {@link CameraView}.
+         * @param data JPEG data.
+         */
+        public void onPictureTaken(CameraView cameraView, byte[] data) {
+        }
+
+        /**
+         * Called when taking a picture has failed
+         *
+         * @param cameraView The associated {@link CameraView}.
+         * @param throwable Exception
+         */
+        public void onTakePictureFailed(CameraView cameraView, Throwable throwable) {
+        }
+
+        /**
+         * Called when determining what size of preview to use
+         *
+         * @param cameraView The associated {@link CameraView}.
+         * @param availableSizes A SizeMap of available sizes grouped by aspect ratio
+         * @param suggestedSize The default suggested size based on surface
+         * @param aspectRatio The aspect ratio specified to the CameraView
+         * @return The desired preview size, or null for default
+         * (highest res of that aspect ratio)
+         */
+        public Size onChoosePreviewSize(CameraView cameraView, SizeMap availableSizes,
+                                        Size suggestedSize, AspectRatio aspectRatio) {
+            return suggestedSize;
+        }
+
+        /**
+         * Called when determining what size of picture to use
+         *
+         * @param cameraView The associated {@link CameraView}.
+         * @param availableSizes A SizeMap of available sizes grouped by aspect ratio
+         * @param aspectRatio The aspect ratio specified to the CameraView
+         * @return The desired picture size, or null for default
+         * (highest res of that aspect ratio)
+         */
+        public Size onChoosePictureSize(CameraView cameraView, SizeMap availableSizes,
+                                        AspectRatio aspectRatio) {
+            return null;
         }
     }
 
@@ -464,6 +637,13 @@ public class CameraView extends FrameLayout {
         }
 
         @Override
+        public void onFocusAt(int x, int y) {
+            for (Callback callback : mCallbacks) {
+                callback.onFocusAt(x, y);
+            }
+        }
+
+        @Override
         public void onPictureTaken(byte[] data) {
             for (Callback callback : mCallbacks) {
                 callback.onPictureTaken(CameraView.this, data);
@@ -509,144 +689,6 @@ public class CameraView extends FrameLayout {
 
         public void reserveRequestLayoutOnOpen() {
             mRequestLayoutOnOpen = true;
-        }
-    }
-
-    protected static class SavedState extends BaseSavedState {
-
-        @Facing
-        int facing;
-
-        AspectRatio ratio;
-
-        boolean autoFocus;
-
-        @Flash
-        int flash;
-
-        @SuppressWarnings("WrongConstant")
-        public SavedState(Parcel source, ClassLoader loader) {
-            super(source);
-            facing = source.readInt();
-            ratio = source.readParcelable(loader);
-            autoFocus = source.readByte() != 0;
-            flash = source.readInt();
-        }
-
-        public SavedState(Parcelable superState) {
-            super(superState);
-        }
-
-        @Override
-        public void writeToParcel(Parcel out, int flags) {
-            super.writeToParcel(out, flags);
-            out.writeInt(facing);
-            out.writeParcelable(ratio, 0);
-            out.writeByte((byte) (autoFocus ? 1 : 0));
-            out.writeInt(flash);
-        }
-
-        public static final Parcelable.Creator<SavedState> CREATOR
-                = ParcelableCompat.newCreator(new ParcelableCompatCreatorCallbacks<SavedState>() {
-
-            @Override
-            public SavedState createFromParcel(Parcel in, ClassLoader loader) {
-                return new SavedState(in, loader);
-            }
-
-            @Override
-            public SavedState[] newArray(int size) {
-                return new SavedState[size];
-            }
-
-        });
-
-    }
-
-    /**
-     * Callback for monitoring events about {@link CameraView}.
-     */
-    @SuppressWarnings("UnusedParameters")
-    public abstract static class Callback {
-
-        /**
-         * Called when camera is opened.
-         *
-         * @param cameraView The associated {@link CameraView}.
-         */
-        public void onCameraOpened(CameraView cameraView) {
-        }
-
-        /**
-         * Called when camera is closed.
-         *
-         * @param cameraView The associated {@link CameraView}.
-         */
-        public void onCameraClosed(CameraView cameraView) {
-        }
-
-        /**
-         * Called when camera is configured ready to take pictures.
-         *
-         * @param cameraView The associated {@link CameraView}.
-         */
-        public void onCameraConfigured(CameraView cameraView) {
-
-        }
-
-        /**
-         * Called when there is no camera to open
-         *
-         * @param cameraView The associated {@link CameraView}.
-         */
-        public void onCameraNotAvailable(CameraView cameraView) {
-        }
-
-        /**
-         * Called when a picture is taken.
-         *
-         * @param cameraView The associated {@link CameraView}.
-         * @param data JPEG data.
-         */
-        public void onPictureTaken(CameraView cameraView, byte[] data) {
-        }
-
-        /**
-         * Called when taking a picture has failed
-         *
-         * @param cameraView The associated {@link CameraView}.
-         * @param throwable Exception
-         */
-        public void onTakePictureFailed(CameraView cameraView, Throwable throwable) {
-        }
-
-        /**
-         * Called when determining what size of preview to use
-         *
-         * @param cameraView The associated {@link CameraView}.
-         * @param availableSizes A SizeMap of available sizes grouped by aspect ratio
-         * @param suggestedSize The default suggested size based on surface
-         * @param aspectRatio The aspect ratio specified to the CameraView
-         * @return The desired preview size, or null for default
-         * (highest res of that aspect ratio)
-         */
-        public Size onChoosePreviewSize(CameraView cameraView, SizeMap availableSizes,
-                                        Size suggestedSize, AspectRatio aspectRatio) {
-            return suggestedSize;
-        }
-
-        /**
-         * Called when determining what size of picture to use
-         *
-         * @param cameraView The associated {@link CameraView}.
-         * @param availableSizes A SizeMap of available sizes grouped by aspect ratio
-         * @param aspectRatio The aspect ratio specified to the CameraView
-         * @return The desired picture size, or null for default
-         * (highest res of that aspect ratio)
-         */
-        public Size onChoosePictureSize(CameraView cameraView, SizeMap availableSizes,
-                                        AspectRatio aspectRatio) {
-            return null;
         }
     }
 
