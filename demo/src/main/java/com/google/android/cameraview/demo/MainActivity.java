@@ -44,10 +44,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
-
 import com.google.android.cameraview.AspectRatio;
 import com.google.android.cameraview.CameraView;
-
+import com.google.android.cameraview.Size;
+import com.google.android.cameraview.SizeMap;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -281,6 +281,11 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         @Override
+        public void onCameraNotAvailable(CameraView cameraView) {
+            super.onCameraNotAvailable(cameraView);
+        }
+
+        @Override
         public void onCameraConfigured(CameraView cameraView) {
             super.onCameraConfigured(cameraView);
             if (mFab != null) {
@@ -322,6 +327,24 @@ public class MainActivity extends AppCompatActivity implements
             });
         }
 
+        @Override
+        public void onTakePictureFailed(CameraView cameraView, Throwable throwable) {
+            super.onTakePictureFailed(cameraView, throwable);
+        }
+
+        @Override
+        public Size onChoosePreviewSize(CameraView cameraView, SizeMap availableSizes, Size suggestedSize, AspectRatio aspectRatio) {
+//            return super.onChoosePreviewSize(cameraView, availableSizes, suggestedSize, aspectRatio);
+            int width = 1080;
+            return new Size(width, width * aspectRatio.getX() / aspectRatio.getY());
+        }
+
+        @Override
+        public Size onChoosePictureSize(CameraView cameraView, SizeMap availableSizes, AspectRatio aspectRatio) {
+//            return super.onChoosePictureSize(cameraView, availableSizes, aspectRatio);
+            int width = 500;
+            return new Size(width, width * aspectRatio.getX() / aspectRatio.getY());
+        }
     };
 
     public static class ConfirmationDialogFragment extends DialogFragment {

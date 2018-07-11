@@ -82,6 +82,10 @@ abstract class CameraViewImpl {
         void onPictureTaken(byte[] data);
 
         void onTakePictureFailed(Throwable throwable);
+
+        Size onChoosePreviewSize(SizeMap availableSizes, Size suggestedSize, AspectRatio aspectRatio);
+
+        Size onChoosePictureSize(SizeMap availableSizes, AspectRatio aspectRatio);
     }
 
 }

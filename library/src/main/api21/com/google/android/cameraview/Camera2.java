@@ -465,8 +465,11 @@ class Camera2 extends CameraViewImpl {
         if (mImageReader != null) {
             mImageReader.close();
         }
-        Size largest = mPictureSizes.sizes(mAspectRatio).last();
-        mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(),
+        Size selectedSize = mPictureSizes.sizes(mAspectRatio).last();
+        if (mCallback != null) {
+            selectedSize = mCallback.onChoosePictureSize(mPictureSizes, mAspectRatio);
+        }
+        mImageReader = ImageReader.newInstance(selectedSize.getWidth(), selectedSize.getHeight(),
                 ImageFormat.JPEG, /* maxImages */ 2);
         mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, null);
     }
@@ -497,6 +500,9 @@ class Camera2 extends CameraViewImpl {
             return;
         }
         Size previewSize = chooseOptimalSize();
+        if (mCallback != null) {
+            previewSize = mCallback.onChoosePreviewSize(mPictureSizes, previewSize, mAspectRatio);
+        }
         mPreview.setBufferSize(previewSize.getWidth(), previewSize.getHeight());
         Surface surface = mPreview.getSurface();
         try {

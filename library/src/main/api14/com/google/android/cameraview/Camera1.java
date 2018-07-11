@@ -343,29 +343,39 @@ class Camera1 extends CameraViewImpl {
             mAspectRatio = chooseAspectRatio();
             sizes = mPreviewSizes.sizes(mAspectRatio);
         }
-        Size size = chooseOptimalSize(sizes);
-
-        final Size pictureSize;
-        if (mPictureSizes.sizes(mAspectRatio) == null) {
-            pictureSize = size;
-        } else {
-            // Largest picture size in this ratio
-            pictureSize = mPictureSizes.sizes(mAspectRatio).last();
+        Size previewSize = chooseOptimalSize(sizes);
+        if (mCallback != null) {
+            previewSize = mCallback.onChoosePreviewSize(mPreviewSizes, previewSize, mAspectRatio);
         }
+        final Camera.Size currentSize = mCameraParameters.getPictureSize();
+        if (currentSize.width != previewSize.getWidth() ||
+                currentSize.height != previewSize.getHeight()) {
+            Size pictureSize;
+            if (mPictureSizes.sizes(mAspectRatio) == null) {
+                pictureSize = previewSize;
+            } else {
+                // Largest picture size in this ratio
+                pictureSize = mPictureSizes.sizes(mAspectRatio).last();
+            }
 
-        if (mShowingPreview) {
-            mCamera.stopPreview();
-        }
+            if (mCallback != null) {
+                pictureSize = mCallback.onChoosePictureSize(mPictureSizes, mAspectRatio);
+            }
 
-        // Always re-apply camera parameters
-        mCameraParameters.setPreviewSize(size.getWidth(), size.getHeight());
-        mCameraParameters.setPictureSize(pictureSize.getWidth(), pictureSize.getHeight());
-        mCameraParameters.setRotation(calcCameraRotation(mDisplayOrientation));
-        setAutoFocusInternal(mAutoFocus);
-        setFlashInternal(mFlash);
-        mCamera.setParameters(mCameraParameters);
-        if (mShowingPreview) {
-            mCamera.startPreview();
+            if (mShowingPreview) {
+                mCamera.stopPreview();
+            }
+
+            // Always re-apply camera parameters
+            mCameraParameters.setPreviewSize(previewSize.getWidth(), previewSize.getHeight());
+            mCameraParameters.setPictureSize(pictureSize.getWidth(), pictureSize.getHeight());
+            mCameraParameters.setRotation(calcCameraRotation(mDisplayOrientation));
+            setAutoFocusInternal(mAutoFocus);
+            setFlashInternal(mFlash);
+            mCamera.setParameters(mCameraParameters);
+            if (mShowingPreview) {
+                mCamera.startPreview();
+            }
         }
     }
 
