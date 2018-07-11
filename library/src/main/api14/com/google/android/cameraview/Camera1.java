@@ -77,6 +77,8 @@ class Camera1 extends CameraViewImpl {
 
     private int mDisplayOrientation;
 
+    private float mZoom = 1.f;
+
     private CameraCoordinateTransformer mCoordinateTransformer;
 
     private Rect mPreviewRect = new Rect(0, 0, 0, 0);
@@ -107,6 +109,31 @@ class Camera1 extends CameraViewImpl {
                 }
             }
         });
+    }
+
+    @Override
+    void setZoom(float zoom) {
+        if (zoom == mZoom) {
+            return;
+        }
+        if (setZoomInternal(zoom)) {
+            mCamera.setParameters(mCameraParameters);
+        }
+    }
+
+    @Override
+    float getZoom() {
+        return mZoom;
+    }
+
+    @Override
+    float getMaxZoom() {
+        if (mCameraParameters == null) return 1.f;
+
+        List<Integer> zoomRatios = mCameraParameters.getZoomRatios();
+        if (zoomRatios.isEmpty()) return 1.f;
+
+        return zoomRatios.get(zoomRatios.size() - 1) / 100.f;
     }
 
     @Override
@@ -289,11 +316,18 @@ class Camera1 extends CameraViewImpl {
                     //Check if camera still previewing
                     if (mShowingPreview) {
                         camera.cancelAutoFocus();
-                        camera.startPreview();
+//                        camera.startPreview();
                     }
                 }
             });
             mCameraHandler.removeCallbacks(mReturnToContinuousAFRunnable);
+        }
+    }
+
+    @Override
+    void resumePreview() {
+        if (isCameraOpened()) {
+            mCamera.startPreview();
         }
     }
 
@@ -454,10 +488,48 @@ class Camera1 extends CameraViewImpl {
             mCameraParameters.setRotation(calcCameraRotation(mDisplayOrientation));
             setAutoFocusInternal(mAutoFocus);
             setFlashInternal(mFlash);
+            setZoomInternal(mZoom);
             mCamera.setParameters(mCameraParameters);
             if (mShowingPreview) {
                 mCamera.startPreview();
             }
+        }
+    }
+
+    private int getZoomIdxForZoomFactor(float zoom) {
+        List<Integer> zoomRatios = mCameraParameters.getZoomRatios();
+
+        int zoomRatioFormat = (int) (zoom * 100);
+
+        int len = zoomRatios.size();
+        int possibleIdx = 0;
+        int minDiff = Integer.MAX_VALUE;
+        int tmp;
+        for (int i = 0; i < len; ++i) {
+            tmp = Math.abs(zoomRatioFormat - zoomRatios.get(i));
+            if (tmp < minDiff) {
+                minDiff = tmp;
+                possibleIdx = i;
+            }
+        }
+        return possibleIdx;
+    }
+
+    /**
+     * @return {@code true} if {@link #mCameraParameters} was modified.
+     */
+    private boolean setZoomInternal(float zoom) {
+        if (isCameraOpened()) {
+            if (!mCameraParameters.isZoomSupported()) return false;
+
+            int camera1Zoom = getZoomIdxForZoomFactor(zoom);
+            mCameraParameters.setZoom(camera1Zoom);
+            mZoom = zoom;
+            return true;
+
+        } else {
+            mZoom = zoom;
+            return false;
         }
     }
 
@@ -627,7 +699,7 @@ class Camera1 extends CameraViewImpl {
                 mPreviewRect.right - size);
         int top = CameraUtil.clamp(y - size / 2, mPreviewRect.top,
                 mPreviewRect.bottom - size);
-        RectF rectF = new RectF(left, top, left +size, top+ size);
+        RectF rectF = new RectF(left, top, left + size, top + size);
         return CameraUtil.rectFToRect(mCoordinateTransformer.toCameraSpace(rectF));
     }
 

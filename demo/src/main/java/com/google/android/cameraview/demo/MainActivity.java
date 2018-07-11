@@ -108,12 +108,28 @@ public class MainActivity extends AppCompatActivity implements
                         mCameraView.takePicture();
                     }
                     break;
-                case R.id.ib_open_close:
+                case R.id.btn_open_close:
                     if (mCameraView != null) {
                         if (mIsOpen) {
                             mCameraView.stop();
                         } else {
                             mCameraView.start();
+                        }
+                    }
+                    break;
+                case R.id.btn_zoom_out:
+                    if (mCameraView != null) {
+                        float zoom = mCameraView.getZoom();
+                        if (zoom - 0.5 >= 0.5) {
+                            mCameraView.setZoom(zoom - 0.5f);
+                        }
+                    }
+                    break;
+                case R.id.btn_zoom_in:
+                    if (mCameraView != null) {
+                        float zoom = mCameraView.getZoom();
+                        if (zoom + 0.5 <= mCameraView.getMaxZoom()) {
+                            mCameraView.setZoom(zoom + 0.5f);
                         }
                     }
                     break;
@@ -128,8 +144,8 @@ public class MainActivity extends AppCompatActivity implements
         mCameraView = (CameraView) findViewById(R.id.camera);
         if (mCameraView != null) {
             mCameraView.addCallback(mCallback);
+            mCameraView.setManualFocus(true);
         }
-        mCameraView.setManualFocus(true);
 
         mFab = (FloatingActionButton) findViewById(R.id.take_picture);
 
@@ -141,7 +157,9 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         mImgPic = (ImageView) findViewById(R.id.img_preview);
-        findViewById(R.id.ib_open_close).setOnClickListener(mOnClickListener);
+        findViewById(R.id.btn_open_close).setOnClickListener(mOnClickListener);
+        findViewById(R.id.btn_zoom_out).setOnClickListener(mOnClickListener);
+        findViewById(R.id.btn_zoom_in).setOnClickListener(mOnClickListener);
     }
 
     @Override
@@ -303,6 +321,8 @@ public class MainActivity extends AppCompatActivity implements
             // just for preview
             mImgPic.setImageBitmap(bytes2Bimap(data));
 
+            cameraView.resumePreview();
+
             getBackgroundHandler().post(new Runnable() {
                 @Override
                 public void run() {
@@ -335,16 +355,16 @@ public class MainActivity extends AppCompatActivity implements
 
         @Override
         public Size onChoosePreviewSize(CameraView cameraView, SizeMap availableSizes, Size suggestedSize, AspectRatio aspectRatio) {
-//            return super.onChoosePreviewSize(cameraView, availableSizes, suggestedSize, aspectRatio);
-            int width = 1080;
-            return new Size(width, width * aspectRatio.getX() / aspectRatio.getY());
+            return super.onChoosePreviewSize(cameraView, availableSizes, suggestedSize, aspectRatio);
+//            int width = 1080;
+//            return new Size(width, width * aspectRatio.getX() / aspectRatio.getY());
         }
 
         @Override
         public Size onChoosePictureSize(CameraView cameraView, SizeMap availableSizes, AspectRatio aspectRatio) {
-//            return super.onChoosePictureSize(cameraView, availableSizes, aspectRatio);
-            int width = 500;
-            return new Size(width, width * aspectRatio.getX() / aspectRatio.getY());
+            return super.onChoosePictureSize(cameraView, availableSizes, aspectRatio);
+//            int width = 500;
+//            return new Size(width, width * aspectRatio.getX() / aspectRatio.getY());
         }
     };
 

@@ -29,7 +29,9 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:adjustViewBounds="true"
-        android:background="@android:color/black"/>
+        android:background="@android:color/black"
+        android:keepScreenOn="true"
+        app:zoom="1"/>
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar"
@@ -52,7 +54,7 @@
         android:layout_alignParentBottom="true">
 
         <Button
-            android:id="@+id/ib_open_close"
+            android:id="@+id/btn_open_close"
             android:layout_width="80dp"
             android:layout_height="50dp"
             android:layout_centerVertical="true"
@@ -65,6 +67,22 @@
             android:layout_centerHorizontal="true"
             android:layout_centerVertical="true"
             app:srcCompat="@drawable/ic_camera"/>
+
+        <Button
+            android:id="@+id/btn_zoom_out"
+            android:layout_width="80dp"
+            android:layout_height="50dp"
+            android:layout_centerVertical="true"
+            android:layout_toLeftOf="@+id/btn_zoom_in"
+            android:text="Zoom out"/>
+
+        <Button
+            android:id="@+id/btn_zoom_in"
+            android:layout_width="80dp"
+            android:layout_height="50dp"
+            android:layout_centerVertical="true"
+            android:layout_alignParentRight="true"
+            android:text="Zoom in"/>
 
     </RelativeLayout>
 

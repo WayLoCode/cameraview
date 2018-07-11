@@ -93,10 +93,38 @@ class Camera2 extends CameraViewImpl {
     private ImageReader mImageReader;
     private int mFacing;
     private AspectRatio mAspectRatio = Constants.DEFAULT_ASPECT_RATIO;
+    private final CameraDevice.StateCallback mCameraDeviceCallback
+            = new CameraDevice.StateCallback() {
+
+        @Override
+        public void onOpened(@NonNull CameraDevice camera) {
+            mCamera = camera;
+            mCallback.onCameraOpened();
+            startCaptureSession();
+        }
+
+        @Override
+        public void onClosed(@NonNull CameraDevice camera) {
+            mCamera = null;
+            mCallback.onCameraClosed();
+        }
+
+        @Override
+        public void onDisconnected(@NonNull CameraDevice camera) {
+            mCamera = null;
+        }
+
+        @Override
+        public void onError(@NonNull CameraDevice camera, int error) {
+            Log.e(TAG, "onError: " + camera.getId() + " (" + error + ")");
+            mCamera = null;
+        }
+
+    };
     private boolean mAutoFocus;
     private int mFlash;
     private int mDisplayOrientation;
-
+    private float mZoom = 1.f;
     private Rect mCropRegion;
     private MeteringRectangle[] mAFRegions = AutoFocusHelper.getZeroWeightRegion();
     private MeteringRectangle[] mAERegions = AutoFocusHelper.getZeroWeightRegion();
@@ -126,93 +154,6 @@ class Camera2 extends CameraViewImpl {
         }
 
     };
-
-    /**
-     * A {@link CameraCaptureSession.CaptureCallback} for capturing a still picture.
-     */
-    private static abstract class PictureCaptureCallback
-            extends CameraCaptureSession.CaptureCallback {
-
-        static final int STATE_PREVIEW = 0;
-        static final int STATE_LOCKING = 1;
-        static final int STATE_LOCKED = 2;
-        static final int STATE_PRECAPTURE = 3;
-        static final int STATE_WAITING = 4;
-        static final int STATE_CAPTURING = 5;
-
-        private int mState;
-
-        PictureCaptureCallback() {
-        }
-
-        void setState(int state) {
-            mState = state;
-        }
-
-        @Override
-        public void onCaptureProgressed(@NonNull CameraCaptureSession session,
-                                        @NonNull CaptureRequest request, @NonNull CaptureResult partialResult) {
-            process(partialResult);
-        }
-
-        @Override
-        public void onCaptureCompleted(@NonNull CameraCaptureSession session,
-                                       @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
-            process(result);
-        }
-
-        private void process(@NonNull CaptureResult result) {
-            switch (mState) {
-                case STATE_LOCKING: {
-                    Integer af = result.get(CaptureResult.CONTROL_AF_STATE);
-                    if (af == null) {
-                        break;
-                    }
-                    if (af == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED ||
-                            af == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
-                        Integer ae = result.get(CaptureResult.CONTROL_AE_STATE);
-                        if (ae == null || ae == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
-                            setState(STATE_CAPTURING);
-                            onReady();
-                        } else {
-                            setState(STATE_LOCKED);
-                            onPrecaptureRequired();
-                        }
-                    }
-                    break;
-                }
-                case STATE_PRECAPTURE: {
-                    Integer ae = result.get(CaptureResult.CONTROL_AE_STATE);
-                    if (ae == null || ae == CaptureResult.CONTROL_AE_STATE_PRECAPTURE ||
-                            ae == CaptureRequest.CONTROL_AE_STATE_FLASH_REQUIRED ||
-                            ae == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
-                        setState(STATE_WAITING);
-                    }
-                    break;
-                }
-                case STATE_WAITING: {
-                    Integer ae = result.get(CaptureResult.CONTROL_AE_STATE);
-                    if (ae == null || ae != CaptureResult.CONTROL_AE_STATE_PRECAPTURE) {
-                        setState(STATE_CAPTURING);
-                        onReady();
-                    }
-                    break;
-                }
-            }
-        }
-
-        /**
-         * Called when it is ready to take a still picture.
-         */
-        public abstract void onReady();
-
-        /**
-         * Called when it is necessary to run the precapture sequence.
-         */
-        public abstract void onPrecaptureRequired();
-
-    }
-
     private final CameraCaptureSession.StateCallback mSessionCallback
             = new CameraCaptureSession.StateCallback() {
 
@@ -224,6 +165,7 @@ class Camera2 extends CameraViewImpl {
             mCaptureSession = session;
             updateAutoFocus();
             updateFlash();
+            updateZoom();
             mCallback.onCameraConfigured();
 
             try {
@@ -247,35 +189,6 @@ class Camera2 extends CameraViewImpl {
                 mCaptureSession = null;
             }
         }
-
-    };
-    private final CameraDevice.StateCallback mCameraDeviceCallback
-            = new CameraDevice.StateCallback() {
-
-        @Override
-        public void onOpened(@NonNull CameraDevice camera) {
-            mCamera = camera;
-            mCallback.onCameraOpened();
-            startCaptureSession();
-        }
-
-        @Override
-        public void onClosed(@NonNull CameraDevice camera) {
-            mCamera = null;
-            mCallback.onCameraClosed();
-        }
-
-        @Override
-        public void onDisconnected(@NonNull CameraDevice camera) {
-            mCamera = null;
-        }
-
-        @Override
-        public void onError(@NonNull CameraDevice camera, int error) {
-            Log.e(TAG, "onError: " + camera.getId() + " (" + error + ")");
-            mCamera = null;
-        }
-
     };
     /** Runnable that returns to CONTROL_AF_MODE = AF_CONTINUOUS_PICTURE. */
     private final Runnable mReturnToContinuousAFRunnable = new Runnable() {
@@ -305,6 +218,59 @@ class Camera2 extends CameraViewImpl {
                 startCaptureSession();
             }
         });
+    }
+
+    @Override
+    float getZoom() {
+        return mZoom;
+    }
+
+    @Override
+    void setZoom(float zoom) {
+        if (mZoom == zoom) {
+            return;
+        }
+
+        float saved = mZoom;
+        mZoom = zoom;
+        if (mCameraCharacteristics != null) {
+            if (updateZoom()) {
+                try {
+                    mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(),
+                            mCaptureCallback, null);
+                } catch (CameraAccessException e) {
+                    mZoom = saved; // Revert
+                }
+            }
+        }
+    }
+
+    @Override
+    float getMaxZoom() {
+        Float maxZoom = mCameraCharacteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
+        if (maxZoom == null) return 1.f;
+        return maxZoom;
+    }
+
+    boolean updateZoom() {
+        Float maxZoom = mCameraCharacteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
+        if (maxZoom == null) return false;
+
+        Rect m = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+        if (m == null) return false;
+
+        if (mZoom < 1.f) mZoom = 1.f;
+        if (mZoom > maxZoom) mZoom = maxZoom;
+        if (mPreviewRequestBuilder == null) return false;
+        if (mCaptureSession == null) return false;
+
+        int cropW = (m.width() - (int) ((float) m.width() / mZoom)) / 2;
+        int cropH = (m.height() - (int) ((float) m.height() / mZoom)) / 2;
+
+        Rect zoomRect = new Rect(cropW, cropH, m.width() - cropW, m.height() - cropH);
+        mPreviewRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoomRect);
+
+        return true;
     }
 
     @Override
@@ -732,7 +698,6 @@ class Camera2 extends CameraViewImpl {
         }
     }
 
-
     /**
      * Updates the internal state of manual focus.
      */
@@ -846,6 +811,20 @@ class Camera2 extends CameraViewImpl {
                             CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
                     break;
             }
+
+            Float maxZoom = mCameraCharacteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
+            Rect m = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+            if (m != null && maxZoom != null) {
+                if (mZoom < 1.f) mZoom = 1.f;
+                if (mZoom > maxZoom) mZoom = maxZoom;
+
+                int cropW = (m.width() - (int) ((float) m.width() / mZoom)) / 2;
+                int cropH = (m.height() - (int) ((float) m.height() / mZoom)) / 2;
+
+                Rect zoomRect = new Rect(cropW, cropH, m.width() - cropW, m.height() - cropH);
+                captureRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoomRect);
+            }
+
             // Calculate JPEG orientation.
             @SuppressWarnings("ConstantConditions")
             int sensorOrientation = mCameraCharacteristics.get(
@@ -863,7 +842,7 @@ class Camera2 extends CameraViewImpl {
                             public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                                            @NonNull CaptureRequest request,
                                                            @NonNull TotalCaptureResult result) {
-                                unlockFocus();
+//                                unlockFocus();
                             }
                         }, null);
             }
@@ -871,6 +850,11 @@ class Camera2 extends CameraViewImpl {
         } catch (CameraAccessException e) {
             Log.e(TAG, "Cannot capture a still picture.", e);
         }
+    }
+
+    void resumePreview() {
+        if (isCameraOpened())
+            unlockFocus();
     }
 
     /**
@@ -888,6 +872,7 @@ class Camera2 extends CameraViewImpl {
             mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback, null);
             updateAutoFocus();
             updateFlash();
+            updateZoom();
             mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
                     CaptureRequest.CONTROL_AF_TRIGGER_IDLE);
             mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), mCaptureCallback,
@@ -904,6 +889,92 @@ class Camera2 extends CameraViewImpl {
     private void resumeContinuousAFAfterDelay(int millis) {
         mCameraHandler.removeCallbacks(mReturnToContinuousAFRunnable);
         mCameraHandler.postDelayed(mReturnToContinuousAFRunnable, millis);
+    }
+
+    /**
+     * A {@link CameraCaptureSession.CaptureCallback} for capturing a still picture.
+     */
+    private static abstract class PictureCaptureCallback
+            extends CameraCaptureSession.CaptureCallback {
+
+        static final int STATE_PREVIEW = 0;
+        static final int STATE_LOCKING = 1;
+        static final int STATE_LOCKED = 2;
+        static final int STATE_PRECAPTURE = 3;
+        static final int STATE_WAITING = 4;
+        static final int STATE_CAPTURING = 5;
+
+        private int mState;
+
+        PictureCaptureCallback() {
+        }
+
+        void setState(int state) {
+            mState = state;
+        }
+
+        @Override
+        public void onCaptureProgressed(@NonNull CameraCaptureSession session,
+                                        @NonNull CaptureRequest request, @NonNull CaptureResult partialResult) {
+            process(partialResult);
+        }
+
+        @Override
+        public void onCaptureCompleted(@NonNull CameraCaptureSession session,
+                                       @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
+            process(result);
+        }
+
+        private void process(@NonNull CaptureResult result) {
+            switch (mState) {
+                case STATE_LOCKING: {
+                    Integer af = result.get(CaptureResult.CONTROL_AF_STATE);
+                    if (af == null) {
+                        break;
+                    }
+                    if (af == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED ||
+                            af == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
+                        Integer ae = result.get(CaptureResult.CONTROL_AE_STATE);
+                        if (ae == null || ae == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
+                            setState(STATE_CAPTURING);
+                            onReady();
+                        } else {
+                            setState(STATE_LOCKED);
+                            onPrecaptureRequired();
+                        }
+                    }
+                    break;
+                }
+                case STATE_PRECAPTURE: {
+                    Integer ae = result.get(CaptureResult.CONTROL_AE_STATE);
+                    if (ae == null || ae == CaptureResult.CONTROL_AE_STATE_PRECAPTURE ||
+                            ae == CaptureRequest.CONTROL_AE_STATE_FLASH_REQUIRED ||
+                            ae == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
+                        setState(STATE_WAITING);
+                    }
+                    break;
+                }
+                case STATE_WAITING: {
+                    Integer ae = result.get(CaptureResult.CONTROL_AE_STATE);
+                    if (ae == null || ae != CaptureResult.CONTROL_AE_STATE_PRECAPTURE) {
+                        setState(STATE_CAPTURING);
+                        onReady();
+                    }
+                    break;
+                }
+            }
+        }
+
+        /**
+         * Called when it is ready to take a still picture.
+         */
+        public abstract void onReady();
+
+        /**
+         * Called when it is necessary to run the precapture sequence.
+         */
+        public abstract void onPrecaptureRequired();
+
     }
 
 }

@@ -64,6 +64,12 @@ abstract class CameraViewImpl {
 
     abstract void setFlash(int flash);
 
+    abstract void setZoom(float zoom);
+
+    abstract float getZoom();
+
+    abstract float getMaxZoom();
+
     abstract void takePicture();
 
     abstract void setDisplayOrientation(int displayOrientation);
@@ -71,6 +77,8 @@ abstract class CameraViewImpl {
     abstract boolean hasManualFocus();
 
     abstract void setFocusAt(int x, int y);
+
+    abstract void resumePreview();
 
     interface Callback {
 
