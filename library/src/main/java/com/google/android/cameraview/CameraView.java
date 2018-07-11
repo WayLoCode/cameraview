@@ -35,6 +35,7 @@ import android.view.View;
 import android.widget.FrameLayout;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Set;
 
@@ -80,7 +81,7 @@ public class CameraView extends FrameLayout {
         }
         // Internal setup
         final PreviewImpl preview = createPreviewImpl(context);
-        mCallbacks = new CallbackBridge();
+        mCallbacks = new CallbackBridge(this);
         if (Build.VERSION.SDK_INT < 21) {
             mImpl = new Camera1(mCallbacks, preview);
         } else if (Build.VERSION.SDK_INT < 23) {
@@ -144,6 +145,10 @@ public class CameraView extends FrameLayout {
             mDisplayOrientationDetector.disable();
         }
         super.onDetachedFromWindow();
+
+        if (mCallbacks != null && mCallbacks.mCallbacks != null) {
+            mCallbacks.mCallbacks.clear();
+        }
     }
 
     @Override
@@ -587,13 +592,16 @@ public class CameraView extends FrameLayout {
         }
     }
 
-    private class CallbackBridge implements CameraViewImpl.Callback {
+    private static class CallbackBridge implements CameraViewImpl.Callback {
 
         private final ArrayList<Callback> mCallbacks = new ArrayList<>();
 
         private boolean mRequestLayoutOnOpen;
 
-        CallbackBridge() {
+        private WeakReference<CameraView> cameraView;
+
+        CallbackBridge(CameraView cameraView) {
+            this.cameraView = new WeakReference<>(cameraView);
         }
 
         public void add(Callback callback) {
@@ -608,31 +616,33 @@ public class CameraView extends FrameLayout {
         public void onCameraOpened() {
             if (mRequestLayoutOnOpen) {
                 mRequestLayoutOnOpen = false;
-                requestLayout();
+                if (cameraView.get() != null) {
+                    cameraView.get().requestLayout();
+                }
             }
             for (Callback callback : mCallbacks) {
-                callback.onCameraOpened(CameraView.this);
+                callback.onCameraOpened(cameraView.get());
             }
         }
 
         @Override
         public void onCameraClosed() {
             for (Callback callback : mCallbacks) {
-                callback.onCameraClosed(CameraView.this);
+                callback.onCameraClosed(cameraView.get());
             }
         }
 
         @Override
         public void onCameraNotAvailable() {
             for (Callback callback : mCallbacks) {
-                callback.onCameraNotAvailable(CameraView.this);
+                callback.onCameraNotAvailable(cameraView.get());
             }
         }
 
         @Override
         public void onCameraConfigured() {
             for (Callback callback : mCallbacks) {
-                callback.onCameraConfigured(CameraView.this);
+                callback.onCameraConfigured(cameraView.get());
             }
         }
 
@@ -646,21 +656,21 @@ public class CameraView extends FrameLayout {
         @Override
         public void onPictureTaken(byte[] data) {
             for (Callback callback : mCallbacks) {
-                callback.onPictureTaken(CameraView.this, data);
+                callback.onPictureTaken(cameraView.get(), data);
             }
         }
 
         @Override
         public void onTakePictureFailed(Throwable throwable) {
             for (Callback callback : mCallbacks) {
-                callback.onTakePictureFailed(CameraView.this, throwable);
+                callback.onTakePictureFailed(cameraView.get(), throwable);
             }
         }
 
         @Override
         public Size onChoosePreviewSize(SizeMap availableSizes, Size suggestedSize, AspectRatio aspectRatio) {
             for (Callback callback : mCallbacks) {
-                Size previewSize = callback.onChoosePreviewSize(CameraView.this, availableSizes,
+                Size previewSize = callback.onChoosePreviewSize(cameraView.get(), availableSizes,
                         suggestedSize, aspectRatio);
 
                 // Take first non-null answer
@@ -674,7 +684,7 @@ public class CameraView extends FrameLayout {
         @Override
         public Size onChoosePictureSize(SizeMap availableSizes, AspectRatio aspectRatio) {
             for (Callback callback : mCallbacks) {
-                Size pictureSize = callback.onChoosePictureSize(CameraView.this, availableSizes,
+                Size pictureSize = callback.onChoosePictureSize(cameraView.get(), availableSizes,
                         aspectRatio);
 
                 // Take first non-null answer

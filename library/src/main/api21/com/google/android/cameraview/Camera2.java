@@ -298,7 +298,7 @@ class Camera2 extends CameraViewImpl {
     Camera2(Callback callback, PreviewImpl preview, Context context) {
         super(callback, preview);
         mCameraHandler = new Handler();
-        mCameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        mCameraManager = (CameraManager) context.getApplicationContext().getSystemService(Context.CAMERA_SERVICE);
         mPreview.setCallback(new PreviewImpl.Callback() {
             @Override
             public void onSurfaceChanged() {
