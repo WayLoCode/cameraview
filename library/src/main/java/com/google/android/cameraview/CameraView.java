@@ -29,6 +29,7 @@ import android.support.v4.os.ParcelableCompat;
 import android.support.v4.os.ParcelableCompatCreatorCallbacks;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -40,6 +41,8 @@ import java.util.ArrayList;
 import java.util.Set;
 
 public class CameraView extends FrameLayout {
+
+    private final String TAG = CameraView.class.getSimpleName();
 
     /** The camera device faces the opposite direction as the device's screen. */
     public static final int FACING_BACK = Constants.FACING_BACK;
@@ -252,7 +255,11 @@ public class CameraView extends FrameLayout {
     }
 
     public void setZoom(float zoom) {
-        mImpl.setZoom(zoom);
+        try {
+            mImpl.setZoom(zoom);
+        } catch (Exception e) {
+            Log.e(TAG, e.toString());
+        }
     }
 
     public float getMaxZoom() {
@@ -268,17 +275,21 @@ public class CameraView extends FrameLayout {
      * {@link Activity#onResume()}.
      */
     public void start() {
-        if (!mImpl.start()) {
-            if (mImpl.getView() != null) {
-                this.removeView(mImpl.getView());
-            }
+        try {
+            if (!mImpl.start()) {
+                if (mImpl.getView() != null) {
+                    this.removeView(mImpl.getView());
+                }
 
-            //store the state ,and restore this state after fall back o Camera1
-            Parcelable state = onSaveInstanceState();
-            // Camera2 uses legacy hardware layer; fall back to Camera1
-            mImpl = new Camera1(mCallbacks, createPreviewImpl(getContext()));
-            onRestoreInstanceState(state);
-            mImpl.start();
+                //store the state ,and restore this state after fall back o Camera1
+                Parcelable state = onSaveInstanceState();
+                // Camera2 uses legacy hardware layer; fall back to Camera1
+                mImpl = new Camera1(mCallbacks, createPreviewImpl(getContext()));
+                onRestoreInstanceState(state);
+                mImpl.start();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, e.toString());
         }
     }
 
@@ -287,7 +298,11 @@ public class CameraView extends FrameLayout {
      * {@link Activity#onPause()}.
      */
     public void stop() {
-        mImpl.stop();
+        try {
+            mImpl.stop();
+        } catch (Exception e) {
+            Log.e(TAG, e.toString());
+        }
     }
 
     /**
@@ -356,7 +371,11 @@ public class CameraView extends FrameLayout {
      * {@link #FACING_FRONT}.
      */
     public void setFacing(@Facing int facing) {
-        mImpl.setFacing(facing);
+        try {
+            mImpl.setFacing(facing);
+        } catch (Exception e) {
+            Log.e(TAG, e.toString());
+        }
     }
 
     /**
@@ -382,8 +401,12 @@ public class CameraView extends FrameLayout {
      * @param ratio The {@link AspectRatio} to be set.
      */
     public void setAspectRatio(@NonNull AspectRatio ratio) {
-        if (mImpl.setAspectRatio(ratio)) {
-            requestLayout();
+        try {
+            if (mImpl.setAspectRatio(ratio)) {
+                requestLayout();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, e.toString());
         }
     }
 
@@ -405,7 +428,11 @@ public class CameraView extends FrameLayout {
      * disable it.
      */
     public void setAutoFocus(boolean autoFocus) {
-        mImpl.setAutoFocus(autoFocus);
+        try {
+            mImpl.setAutoFocus(autoFocus);
+        } catch (Exception e) {
+            Log.e(TAG, e.toString());
+        }
     }
 
     /**
@@ -451,7 +478,11 @@ public class CameraView extends FrameLayout {
      * @param flash The desired flash mode.
      */
     public void setFlash(@Flash int flash) {
-        mImpl.setFlash(flash);
+        try {
+            mImpl.setFlash(flash);
+        } catch (Exception e) {
+            Log.e(TAG, e.toString());
+        }
     }
 
     /**
@@ -461,7 +492,8 @@ public class CameraView extends FrameLayout {
     public void takePicture() {
         try {
             mImpl.takePicture();
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
+            Log.e(TAG, e.toString());
             mCallbacks.onTakePictureFailed(e);
         }
     }

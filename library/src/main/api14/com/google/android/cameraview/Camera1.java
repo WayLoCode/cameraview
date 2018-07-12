@@ -24,6 +24,7 @@ import android.hardware.Camera;
 import android.os.Build;
 import android.os.Handler;
 import android.support.v4.util.SparseArrayCompat;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import java.io.IOException;
 import java.util.Collections;
@@ -36,6 +37,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings("deprecation")
 class Camera1 extends CameraViewImpl {
+
+    private final String TAG = Camera1.class.getSimpleName();
 
     private static final int INVALID_CAMERA_ID = -1;
 
@@ -181,7 +184,10 @@ class Camera1 extends CameraViewImpl {
                 mCamera.setPreviewTexture((SurfaceTexture) mPreview.getSurfaceTexture());
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            Log.e(TAG, e.toString());
+            if (mCallback != null) {
+                mCallback.onCameraNotAvailable();
+            }
         }
     }
 
