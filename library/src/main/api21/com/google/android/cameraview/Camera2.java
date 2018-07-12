@@ -586,7 +586,11 @@ class Camera2 extends CameraViewImpl {
         if (mImageReader != null) {
             mImageReader.close();
         }
-        Size selectedSize = mPictureSizes.sizes(mAspectRatio).last();
+        SortedSet<Size> sizes = mPictureSizes.sizes(mAspectRatio);
+        if (null == sizes) {
+            return;
+        }
+        Size selectedSize = sizes.last();
         if (mCallback != null) {
             selectedSize = mCallback.onChoosePictureSize(mPictureSizes, mAspectRatio);
         }
@@ -607,7 +611,10 @@ class Camera2 extends CameraViewImpl {
         try {
             mCameraManager.openCamera(mCameraId, mCameraDeviceCallback, null);
         } catch (SecurityException | CameraAccessException e) {
-            throw new RuntimeException("Failed to open camera: " + mCameraId, e);
+            Log.e(TAG, "Failed to open camera: " + mCameraId, e);
+            if (mCallback != null) {
+                mCallback.onCameraNotAvailable();
+            }
         }
     }
 
@@ -632,7 +639,15 @@ class Camera2 extends CameraViewImpl {
             mCamera.createCaptureSession(Arrays.asList(surface, mImageReader.getSurface()),
                     mSessionCallback, null);
         } catch (CameraAccessException e) {
-            throw new RuntimeException("Failed to start camera session");
+            Log.e(TAG, "Failed to start camera session");
+            if (mCallback != null) {
+                mCallback.onCameraNotAvailable();
+            }
+        } catch (UnsupportedOperationException e) {
+            Log.e(TAG, "Camera not support this capture session");
+            if (mCallback != null) {
+                mCallback.onCameraNotAvailable();
+            }
         }
     }
 
