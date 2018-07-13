@@ -249,11 +249,7 @@ public class CameraView extends FrameLayout {
     }
 
     public void setZoom(float zoom) {
-        try {
-            mImpl.setZoom(zoom);
-        } catch (Exception e) {
-            Log.e(TAG, e.toString());
-        }
+        mImpl.setZoom(zoom);
     }
 
     public float getMaxZoom() {
@@ -284,6 +280,7 @@ public class CameraView extends FrameLayout {
             }
         } catch (Exception e) {
             Log.e(TAG, e.toString());
+            mCallbacks.onCameraNotAvailable();
         }
     }
 
@@ -292,11 +289,7 @@ public class CameraView extends FrameLayout {
      * {@link Activity#onPause()}.
      */
     public void stop() {
-        try {
-            mImpl.stop();
-        } catch (Exception e) {
-            Log.e(TAG, e.toString());
-        }
+        mImpl.stop();
     }
 
     /**
@@ -365,11 +358,7 @@ public class CameraView extends FrameLayout {
      * {@link #FACING_FRONT}.
      */
     public void setFacing(@Facing int facing) {
-        try {
-            mImpl.setFacing(facing);
-        } catch (Exception e) {
-            Log.e(TAG, e.toString());
-        }
+        mImpl.setFacing(facing);
     }
 
     /**
@@ -395,12 +384,8 @@ public class CameraView extends FrameLayout {
      * @param ratio The {@link AspectRatio} to be set.
      */
     public void setAspectRatio(@NonNull AspectRatio ratio) {
-        try {
-            if (mImpl.setAspectRatio(ratio)) {
-                requestLayout();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, e.toString());
+        if (mImpl.setAspectRatio(ratio)) {
+            requestLayout();
         }
     }
 
@@ -422,11 +407,7 @@ public class CameraView extends FrameLayout {
      * disable it.
      */
     public void setAutoFocus(boolean autoFocus) {
-        try {
-            mImpl.setAutoFocus(autoFocus);
-        } catch (Exception e) {
-            Log.e(TAG, e.toString());
-        }
+        mImpl.setAutoFocus(autoFocus);
     }
 
     /**
@@ -472,11 +453,7 @@ public class CameraView extends FrameLayout {
      * @param flash The desired flash mode.
      */
     public void setFlash(@Flash int flash) {
-        try {
-            mImpl.setFlash(flash);
-        } catch (Exception e) {
-            Log.e(TAG, e.toString());
-        }
+        mImpl.setFlash(flash);
     }
 
     /**
