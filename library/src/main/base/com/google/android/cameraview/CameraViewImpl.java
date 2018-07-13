@@ -19,68 +19,68 @@ package com.google.android.cameraview;
 import android.view.View;
 import java.util.Set;
 
-abstract class CameraViewImpl {
+public abstract class CameraViewImpl {
 
     protected final Callback mCallback;
 
     protected final PreviewImpl mPreview;
 
-    CameraViewImpl(Callback callback, PreviewImpl preview) {
+    public CameraViewImpl(Callback callback, PreviewImpl preview) {
         mCallback = callback;
         mPreview = preview;
     }
 
-    View getView() {
+    public View getView() {
         return mPreview.getView();
     }
 
     /**
      * @return {@code true} if the implementation was able to start the camera session.
      */
-    abstract boolean start();
+    public abstract boolean start();
 
-    abstract void stop();
+    public abstract void stop();
 
-    abstract boolean isCameraOpened();
+    public abstract boolean isCameraOpened();
 
-    abstract int getFacing();
+    public abstract int getFacing();
 
-    abstract void setFacing(int facing);
+    public abstract void setFacing(int facing);
 
-    abstract Set<AspectRatio> getSupportedAspectRatios();
+    public abstract Set<AspectRatio> getSupportedAspectRatios();
 
     /**
      * @return {@code true} if the aspect ratio was changed.
      */
-    abstract boolean setAspectRatio(AspectRatio ratio);
+    public abstract boolean setAspectRatio(AspectRatio ratio);
 
-    abstract AspectRatio getAspectRatio();
+    public abstract AspectRatio getAspectRatio();
 
-    abstract boolean getAutoFocus();
+    public abstract boolean getAutoFocus();
 
-    abstract void setAutoFocus(boolean autoFocus);
+    public abstract void setAutoFocus(boolean autoFocus);
 
-    abstract int getFlash();
+    public abstract int getFlash();
 
-    abstract void setFlash(int flash);
+    public abstract void setFlash(int flash);
 
-    abstract void setZoom(float zoom);
+    public abstract void setZoom(float zoom);
 
-    abstract float getZoom();
+    public abstract float getZoom();
 
-    abstract float getMaxZoom();
+    public abstract float getMaxZoom();
 
-    abstract void takePicture();
+    public abstract void takePicture();
 
-    abstract void setDisplayOrientation(int displayOrientation);
+    public abstract void setDisplayOrientation(int displayOrientation);
 
-    abstract boolean hasManualFocus();
+    public abstract boolean hasManualFocus();
 
-    abstract void setFocusAt(int x, int y);
+    public abstract void setFocusAt(int x, int y);
 
-    abstract void resumePreview();
+    public abstract void resumePreview();
 
-    interface Callback {
+    public interface Callback {
 
         void onCameraOpened();
 
@@ -100,5 +100,4 @@ abstract class CameraViewImpl {
 
         Size onChoosePictureSize(SizeMap availableSizes, AspectRatio aspectRatio);
     }
-
 }

@@ -26,7 +26,7 @@ import android.view.View;
  */
 abstract class PreviewImpl {
 
-    interface Callback {
+    public interface Callback {
         void onSurfaceChanged();
     }
 
@@ -36,45 +36,45 @@ abstract class PreviewImpl {
 
     private int mHeight;
 
-    void setCallback(Callback callback) {
+    public void setCallback(Callback callback) {
         mCallback = callback;
     }
 
-    abstract Surface getSurface();
+    public abstract Surface getSurface();
 
-    abstract View getView();
+    public abstract View getView();
 
-    abstract Class getOutputClass();
+    public abstract Class getOutputClass();
 
-    abstract void setDisplayOrientation(int displayOrientation);
+    public abstract void setDisplayOrientation(int displayOrientation);
 
-    abstract boolean isReady();
+    public abstract boolean isReady();
 
     protected void dispatchSurfaceChanged() {
         mCallback.onSurfaceChanged();
     }
 
-    SurfaceHolder getSurfaceHolder() {
+    public SurfaceHolder getSurfaceHolder() {
         return null;
     }
 
-    Object getSurfaceTexture() {
+    public Object getSurfaceTexture() {
         return null;
     }
 
-    void setBufferSize(int width, int height) {
+    public void setBufferSize(int width, int height) {
     }
 
-    void setSize(int width, int height) {
+    public void setSize(int width, int height) {
         mWidth = width;
         mHeight = height;
     }
 
-    int getWidth() {
+    public int getWidth() {
         return mWidth;
     }
 
-    int getHeight() {
+    public int getHeight() {
         return mHeight;
     }
 

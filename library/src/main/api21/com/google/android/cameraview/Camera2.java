@@ -85,9 +85,9 @@ class Camera2 extends CameraViewImpl {
     private final SizeMap mPreviewSizes = new SizeMap();
     private final SizeMap mPictureSizes = new SizeMap();
     private final Handler mCameraHandler;
-    CameraDevice mCamera;
-    CameraCaptureSession mCaptureSession;
-    CaptureRequest.Builder mPreviewRequestBuilder;
+    private CameraDevice mCamera;
+    private CameraCaptureSession mCaptureSession;
+    private CaptureRequest.Builder mPreviewRequestBuilder;
     private String mCameraId;
     private CameraCharacteristics mCameraCharacteristics;
     private ImageReader mImageReader;
@@ -128,7 +128,7 @@ class Camera2 extends CameraViewImpl {
     private Rect mCropRegion;
     private MeteringRectangle[] mAFRegions = AutoFocusHelper.getZeroWeightRegion();
     private MeteringRectangle[] mAERegions = AutoFocusHelper.getZeroWeightRegion();
-    PictureCaptureCallback mCaptureCallback = new PictureCaptureCallback() {
+    private PictureCaptureCallback mCaptureCallback = new PictureCaptureCallback() {
 
         @Override
         public void onPrecaptureRequired() {
@@ -221,12 +221,12 @@ class Camera2 extends CameraViewImpl {
     }
 
     @Override
-    float getZoom() {
+    public float getZoom() {
         return mZoom;
     }
 
     @Override
-    void setZoom(float zoom) {
+    public void setZoom(float zoom) {
         if (mZoom == zoom) {
             return;
         }
@@ -246,13 +246,13 @@ class Camera2 extends CameraViewImpl {
     }
 
     @Override
-    float getMaxZoom() {
+    public float getMaxZoom() {
         Float maxZoom = mCameraCharacteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
         if (maxZoom == null) return 1.f;
         return maxZoom;
     }
 
-    boolean updateZoom() {
+    private boolean updateZoom() {
         Float maxZoom = mCameraCharacteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
         if (maxZoom == null) return false;
 
@@ -274,7 +274,7 @@ class Camera2 extends CameraViewImpl {
     }
 
     @Override
-    boolean start() {
+    public boolean start() {
         if (!chooseCameraIdByFacing()) {
             mCallback.onCameraNotAvailable();
             return false;
@@ -289,7 +289,7 @@ class Camera2 extends CameraViewImpl {
     }
 
     @Override
-    void stop() {
+    public void stop() {
         closeCaptureSession();
 
         if (isCameraOpened()) {
@@ -305,17 +305,17 @@ class Camera2 extends CameraViewImpl {
     }
 
     @Override
-    boolean isCameraOpened() {
+    public boolean isCameraOpened() {
         return mCamera != null;
     }
 
     @Override
-    int getFacing() {
+    public int getFacing() {
         return mFacing;
     }
 
     @Override
-    void setFacing(int facing) {
+    public void setFacing(int facing) {
         if (mFacing == facing) {
             return;
         }
@@ -327,12 +327,12 @@ class Camera2 extends CameraViewImpl {
     }
 
     @Override
-    Set<AspectRatio> getSupportedAspectRatios() {
+    public Set<AspectRatio> getSupportedAspectRatios() {
         return mPreviewSizes.ratios();
     }
 
     @Override
-    boolean setAspectRatio(AspectRatio ratio) {
+    public boolean setAspectRatio(AspectRatio ratio) {
         if (ratio == null || ratio.equals(mAspectRatio)) {
             // TODO: Better error handling
             return false;
@@ -361,17 +361,17 @@ class Camera2 extends CameraViewImpl {
     }
 
     @Override
-    AspectRatio getAspectRatio() {
+    public AspectRatio getAspectRatio() {
         return mAspectRatio;
     }
 
     @Override
-    boolean getAutoFocus() {
+    public boolean getAutoFocus() {
         return mAutoFocus;
     }
 
     @Override
-    void setAutoFocus(boolean autoFocus) {
+    public void setAutoFocus(boolean autoFocus) {
         if (mAutoFocus == autoFocus) {
             return;
         }
@@ -390,12 +390,12 @@ class Camera2 extends CameraViewImpl {
     }
 
     @Override
-    int getFlash() {
+    public int getFlash() {
         return mFlash;
     }
 
     @Override
-    void setFlash(int flash) {
+    public void setFlash(int flash) {
         if (mFlash == flash) {
             return;
         }
@@ -415,7 +415,7 @@ class Camera2 extends CameraViewImpl {
     }
 
     @Override
-    void takePicture() {
+    public void takePicture() {
         if (mAutoFocus) {
             lockFocus();
         } else {
@@ -424,18 +424,18 @@ class Camera2 extends CameraViewImpl {
     }
 
     @Override
-    void setDisplayOrientation(int displayOrientation) {
+    public void setDisplayOrientation(int displayOrientation) {
         mDisplayOrientation = displayOrientation;
         mPreview.setDisplayOrientation(mDisplayOrientation);
     }
 
     @Override
-    boolean hasManualFocus() {
+    public boolean hasManualFocus() {
         return isCameraOpened() && (isAutoFocusSupported() || isAutoExposureSupported());
     }
 
     @Override
-    void setFocusAt(int x, int y) {
+    public void setFocusAt(int x, int y) {
         mCallback.onFocusAt(x, y);
         float points[] = new float[2];
         points[0] = (float) x / mPreview.getWidth();
@@ -465,7 +465,7 @@ class Camera2 extends CameraViewImpl {
         }
     }
 
-    boolean isAutoFocusSupported() {
+    private boolean isAutoFocusSupported() {
         if (!isCameraOpened()) {
             return false;
         }
@@ -475,7 +475,7 @@ class Camera2 extends CameraViewImpl {
         return maxAfRegions != null && maxAfRegions > 0;
     }
 
-    boolean isAutoExposureSupported() {
+    private boolean isAutoExposureSupported() {
         if (!isCameraOpened()) {
             return false;
         }
@@ -623,7 +623,7 @@ class Camera2 extends CameraViewImpl {
      * <p>This rewrites {@link #mPreviewRequestBuilder}.</p>
      * <p>The result will be continuously processed in {@link #mSessionCallback}.</p>
      */
-    void startCaptureSession() {
+    private void startCaptureSession() {
         if (!isCameraOpened() || !mPreview.isReady() || mImageReader == null) {
             return;
         }
@@ -682,7 +682,7 @@ class Camera2 extends CameraViewImpl {
     /**
      * Updates the internal state of auto-focus to {@link #mAutoFocus}.
      */
-    void updateAutoFocus() {
+    private void updateAutoFocus() {
         if (mAutoFocus) {
             int[] modes = mCameraCharacteristics.get(
                     CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES);
@@ -716,7 +716,7 @@ class Camera2 extends CameraViewImpl {
     /**
      * Updates the internal state of manual focus.
      */
-    void updateManualFocus(float x, float y) {
+    private void updateManualFocus(float x, float y) {
         @SuppressWarnings("ConstantConditions")
         int sensorOrientation = mCameraCharacteristics.get(
                 CameraCharacteristics.SENSOR_ORIENTATION);
@@ -793,7 +793,7 @@ class Camera2 extends CameraViewImpl {
     /**
      * Captures a still picture.
      */
-    void captureStillPicture() {
+    private void captureStillPicture() {
         try {
             CaptureRequest.Builder captureRequestBuilder = mCamera.createCaptureRequest(
                     CameraDevice.TEMPLATE_STILL_CAPTURE);
@@ -867,7 +867,7 @@ class Camera2 extends CameraViewImpl {
         }
     }
 
-    void resumePreview() {
+    public void resumePreview() {
         if (isCameraOpened())
             unlockFocus();
     }
@@ -876,7 +876,7 @@ class Camera2 extends CameraViewImpl {
      * Unlocks the auto-focus and restart camera preview. This is supposed to be called after
      * capturing a still picture.
      */
-    void unlockFocus() {
+    private void unlockFocus() {
         if (mPreviewRequestBuilder == null || mCaptureCallback == null || mCaptureSession == null) {
             return;
         }

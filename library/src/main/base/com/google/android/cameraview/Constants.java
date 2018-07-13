@@ -17,7 +17,7 @@
 package com.google.android.cameraview;
 
 
-interface Constants {
+public interface Constants {
 
     AspectRatio DEFAULT_ASPECT_RATIO = AspectRatio.of(4, 3);
 

@@ -61,9 +61,9 @@ public class CameraView extends FrameLayout {
     public static final int FLASH_RED_EYE = Constants.FLASH_RED_EYE;
     private final CallbackBridge mCallbacks;
     private final DisplayOrientationDetector mDisplayOrientationDetector;
-    CameraViewImpl mImpl;
+    private CameraViewImpl mImpl;
 
-    PreviewOverlay mOverlay;
+    private PreviewOverlay mOverlay;
     private boolean mAdjustViewBounds;
 
     public CameraView(Context context) {
@@ -135,13 +135,7 @@ public class CameraView extends FrameLayout {
 
     @NonNull
     private PreviewImpl createPreviewImpl(Context context) {
-        PreviewImpl preview;
-        if (Build.VERSION.SDK_INT < 14) {
-            preview = new SurfaceViewPreview(context, this);
-        } else {
-            preview = new TextureViewPreview(context, this);
-        }
-        return preview;
+        return new TextureViewPreview(context, this);
     }
 
     @Override

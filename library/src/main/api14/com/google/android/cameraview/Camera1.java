@@ -115,7 +115,7 @@ class Camera1 extends CameraViewImpl {
     }
 
     @Override
-    void setZoom(float zoom) {
+    public void setZoom(float zoom) {
         if (zoom == mZoom) {
             return;
         }
@@ -125,12 +125,12 @@ class Camera1 extends CameraViewImpl {
     }
 
     @Override
-    float getZoom() {
+    public float getZoom() {
         return mZoom;
     }
 
     @Override
-    float getMaxZoom() {
+    public float getMaxZoom() {
         if (mCameraParameters == null) return 1.f;
 
         List<Integer> zoomRatios = mCameraParameters.getZoomRatios();
@@ -140,7 +140,7 @@ class Camera1 extends CameraViewImpl {
     }
 
     @Override
-    boolean start() {
+    public boolean start() {
         chooseCamera();
 
         if (!openCamera()) {
@@ -157,7 +157,7 @@ class Camera1 extends CameraViewImpl {
     }
 
     @Override
-    void stop() {
+    public void stop() {
         if (mCamera != null) {
             mCamera.stopPreview();
         }
@@ -169,7 +169,7 @@ class Camera1 extends CameraViewImpl {
 
     // Suppresses Camera#setPreviewTexture
     @SuppressLint("NewApi")
-    void setUpPreview() {
+    private void setUpPreview() {
         try {
             if (mPreview.getOutputClass() == SurfaceHolder.class) {
                 final boolean needsToStopPreview = mShowingPreview && Build.VERSION.SDK_INT < 14;
@@ -192,12 +192,12 @@ class Camera1 extends CameraViewImpl {
     }
 
     @Override
-    boolean isCameraOpened() {
+    public boolean isCameraOpened() {
         return mCamera != null;
     }
 
     @Override
-    void setFacing(int facing) {
+    public void setFacing(int facing) {
         if (mFacing == facing) {
             return;
         }
@@ -211,12 +211,12 @@ class Camera1 extends CameraViewImpl {
     }
 
     @Override
-    int getFacing() {
+    public int getFacing() {
         return mFacing;
     }
 
     @Override
-    Set<AspectRatio> getSupportedAspectRatios() {
+    public Set<AspectRatio> getSupportedAspectRatios() {
         SizeMap idealAspectRatios = mPreviewSizes;
         Set<AspectRatio> ratios = new TreeSet<>(idealAspectRatios.ratios());
         for (AspectRatio aspectRatio : ratios) {
@@ -228,7 +228,7 @@ class Camera1 extends CameraViewImpl {
     }
 
     @Override
-    boolean setAspectRatio(AspectRatio ratio) {
+    public boolean setAspectRatio(AspectRatio ratio) {
         if (mAspectRatio == null || !isCameraOpened()) {
             // Handle this later when camera is opened
             mAspectRatio = ratio;
@@ -247,12 +247,12 @@ class Camera1 extends CameraViewImpl {
     }
 
     @Override
-    AspectRatio getAspectRatio() {
+    public AspectRatio getAspectRatio() {
         return mAspectRatio;
     }
 
     @Override
-    void setAutoFocus(boolean autoFocus) {
+    public void setAutoFocus(boolean autoFocus) {
         if (mAutoFocus == autoFocus) {
             return;
         }
@@ -262,7 +262,7 @@ class Camera1 extends CameraViewImpl {
     }
 
     @Override
-    boolean getAutoFocus() {
+    public boolean getAutoFocus() {
         if (!isCameraOpened()) {
             return mAutoFocus;
         }
@@ -271,7 +271,7 @@ class Camera1 extends CameraViewImpl {
     }
 
     @Override
-    void setFlash(int flash) {
+    public void setFlash(int flash) {
         if (flash == mFlash) {
             return;
         }
@@ -281,12 +281,12 @@ class Camera1 extends CameraViewImpl {
     }
 
     @Override
-    int getFlash() {
+    public int getFlash() {
         return mFlash;
     }
 
     @Override
-    void takePicture() {
+    public void takePicture() {
         if (!isCameraOpened()) {
             throw new IllegalStateException(
                     "Camera is not ready. Call start() before takePicture().");
@@ -305,7 +305,7 @@ class Camera1 extends CameraViewImpl {
         }
     }
 
-    void takePictureInternal() {
+    private void takePictureInternal() {
         if (!isPictureCaptureInProgress.getAndSet(true)) {
             mCamera.takePicture(new Camera.ShutterCallback() {
                 @Override
@@ -331,14 +331,14 @@ class Camera1 extends CameraViewImpl {
     }
 
     @Override
-    void resumePreview() {
+    public void resumePreview() {
         if (isCameraOpened()) {
             mCamera.startPreview();
         }
     }
 
     @Override
-    void setDisplayOrientation(int displayOrientation) {
+    public void setDisplayOrientation(int displayOrientation) {
         if (mDisplayOrientation == displayOrientation) {
             return;
         }
@@ -359,13 +359,13 @@ class Camera1 extends CameraViewImpl {
     }
 
     @Override
-    boolean hasManualFocus() {
+    public boolean hasManualFocus() {
         return isCameraOpened() && getFacing() == Constants.FACING_BACK
                 && (isFocusAreaSupported() || isMeteringAreaSupported());
     }
 
     @Override
-    void setFocusAt(int x, int y) {
+    public void setFocusAt(int x, int y) {
         if (isPictureCaptureInProgress.get()) {
             return;
         }
@@ -385,7 +385,7 @@ class Camera1 extends CameraViewImpl {
         }
     }
 
-    boolean isFocusAreaSupported() {
+    private boolean isFocusAreaSupported() {
         if (Build.VERSION.SDK_INT >= 14) {
             List<String> supportedFocusModes = mCameraParameters.getSupportedFocusModes();
             return (supportedFocusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)

@@ -26,7 +26,7 @@ import android.view.Surface;
 /**
  * Monitors the value returned from {@link Display#getRotation()}.
  */
-abstract class DisplayOrientationDetector {
+public abstract class DisplayOrientationDetector {
 
     private final OrientationEventListener mOrientationEventListener;
 

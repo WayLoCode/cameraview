@@ -24,11 +24,11 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 
-class SurfaceViewPreview extends PreviewImpl {
+public class SurfaceViewPreview extends PreviewImpl {
 
-    final SurfaceView mSurfaceView;
+    private final SurfaceView mSurfaceView;
 
-    SurfaceViewPreview(Context context, ViewGroup parent) {
+    public SurfaceViewPreview(Context context, ViewGroup parent) {
         final View view = View.inflate(context, R.layout.surface_view, parent);
         mSurfaceView = (SurfaceView) view.findViewById(R.id.surface_view);
         final SurfaceHolder holder = mSurfaceView.getHolder();
@@ -55,31 +55,31 @@ class SurfaceViewPreview extends PreviewImpl {
     }
 
     @Override
-    Surface getSurface() {
+    public Surface getSurface() {
         return getSurfaceHolder().getSurface();
     }
 
     @Override
-    SurfaceHolder getSurfaceHolder() {
+    public SurfaceHolder getSurfaceHolder() {
         return mSurfaceView.getHolder();
     }
 
     @Override
-    View getView() {
+    public View getView() {
         return mSurfaceView;
     }
 
     @Override
-    Class getOutputClass() {
+    public Class getOutputClass() {
         return SurfaceHolder.class;
     }
 
     @Override
-    void setDisplayOrientation(int displayOrientation) {
+    public void setDisplayOrientation(int displayOrientation) {
     }
 
     @Override
-    boolean isReady() {
+    public boolean isReady() {
         return getWidth() != 0 && getHeight() != 0;
     }
 

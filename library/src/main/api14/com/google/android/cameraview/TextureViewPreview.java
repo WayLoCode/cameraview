@@ -26,7 +26,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 @TargetApi(14)
-class TextureViewPreview extends PreviewImpl {
+public class TextureViewPreview extends PreviewImpl {
 
     private final TextureView mTextureView;
 
@@ -66,38 +66,38 @@ class TextureViewPreview extends PreviewImpl {
     // This method is called only from Camera2.
     @TargetApi(15)
     @Override
-    void setBufferSize(int width, int height) {
+    public void setBufferSize(int width, int height) {
         mTextureView.getSurfaceTexture().setDefaultBufferSize(width, height);
     }
 
     @Override
-    Surface getSurface() {
+    public Surface getSurface() {
         return new Surface(mTextureView.getSurfaceTexture());
     }
 
     @Override
-    SurfaceTexture getSurfaceTexture() {
+    public SurfaceTexture getSurfaceTexture() {
         return mTextureView.getSurfaceTexture();
     }
 
     @Override
-    View getView() {
+    public View getView() {
         return mTextureView;
     }
 
     @Override
-    Class getOutputClass() {
+    public Class getOutputClass() {
         return SurfaceTexture.class;
     }
 
     @Override
-    void setDisplayOrientation(int displayOrientation) {
+    public void setDisplayOrientation(int displayOrientation) {
         mDisplayOrientation = displayOrientation;
         configureTransform();
     }
 
     @Override
-    boolean isReady() {
+    public boolean isReady() {
         return mTextureView.getSurfaceTexture() != null;
     }
 
@@ -105,7 +105,7 @@ class TextureViewPreview extends PreviewImpl {
      * Configures the transform matrix for TextureView based on {@link #mDisplayOrientation} and
      * the surface size.
      */
-    void configureTransform() {
+    private void configureTransform() {
         Matrix matrix = new Matrix();
         if (mDisplayOrientation % 180 == 90) {
             final int width = getWidth();
